@@ -1,1 +1,1 @@
-A fun little coding exercise.
+I wanted to try parallelization and threading in python.
