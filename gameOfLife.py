@@ -7,6 +7,7 @@ import sys
 import pygame as pg
 import random
 import numpy as np
+# import cProfile, pstats
 
 pg.init()  # initialize pygame
 clock = pg.time.Clock() # to calculate fps
@@ -34,13 +35,7 @@ for i in range(cells_number):
     if random.randint(0, 18) == 1:
         cells[i] = 1
 
-while True:
-    # for pygame to be able to stop program
-    for event in pg.event.get():
-        if event.type == pg.QUIT:
-            pg.quit()
-            exit()
-
+def run_life(cells, cells_new):
     screen.fill(c_black)  # TODO-last add past generations fading effect using alpha for pretty effect
     
     # iterate over every cell and compute the next generation
@@ -72,23 +67,24 @@ while True:
             elif cell_count == 3:
                 cells_new[xy] = 1
                 pg.draw.line(screen, c_green, (x,y), (x,y)) # draw cell born
+
+    # cells = cells_new
+    # cells, cells_new = cells_new, cells  # swap cells array to be able to process next generation without conflict
+
+gen = 0
+while True:
+# for i in range(50):
+    # for pygame to be able to stop program
+    for event in pg.event.get():
+        if event.type == pg.QUIT:
+            pg.quit()
+            exit()
             
-    # TODO ### ADD COPYING BEHAVIOR FOR MATRIX WRAPPING
-    # top
-    # for x in range(screen_x_pad):
-    #     cells_new[x] = cells[cells_number_bottom_row + x]
-    # # bottom
-    # for x in range(screen_x_pad):
-    #     cells_new[cells_number_bottom_row + x] = cells[x]
-
-    # left
-
-    # right
-
-    cells = cells_new  # swap cells array to be able to process next generation without conflict
+    run_life(cells, cells_new)
 
     clock.tick()
     fps = round(clock.get_fps(), 3)
     cells_per_second = round(fps * cells_number)
-    pg.display.set_caption(str(fps) + " fps | " + str(cells_per_second) + " cells/s") # show fps
+    pg.display.set_caption(str(fps) + " fps | " + str(cells_per_second) + " cells/s | " + str(gen) + " gen") # show fps
     pg.display.update()
+    gen += 1
