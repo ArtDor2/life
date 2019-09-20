@@ -1,120 +1,125 @@
-# Artur Dorovskikh 2019-09-18 added multiprocessing
-# Conway's game of life
+# cellular automata simulation
+# By Artur Dorovskikh
+
+# TODO 1. use 1-d array instead, 2. add array wrapping, 3. then numpy array, 4. parallelization with CYTHON, 
 
 import sys
 import pygame as pg
 import random
-import numpy as np
-import multiprocessing
+# import numpy as np
 
 pg.init()  # initialize pygame
-
-# Set game window resolution
-screen_x = screen_y = 400  # TODO fix not being able to set different width and height
-screen = pg.display.set_mode((screen_x,screen_y))
-number_of_cells = screen_x * screen_y
 clock = pg.time.Clock() # to calculate fps
 
-# Set the colors
+# define colors
 c_white = (255, 255, 255)
 c_black = (0, 0, 0)
 c_green = (0, 128, 0)
 c_red = (255, 0, 0)
-# c_yellow = (255, 255, 0)
 
-# Set cell boundaries
+# Set game window resolution
+pad = 2
+screen_x = screen_y = 400  # TODO fix not being able to set different width and height (array out of bounds)
+screen_x_pad, screen_y_pad = screen_x - pad, screen_y - pad
+screen = pg.display.set_mode((screen_x ,screen_y))
+cells_number = screen_x * screen_y
+cells_number_bottom_row = cells_number - screen_x  # for wrapping game world
+
+# Set cell boundaries TODO-remove
 cell_x = screen_x - 1  # -1 to avoid out of bounds error in array
 cell_y = screen_y - 1  # -1 to avoid out of bounds error in array
 
-# TODO IMPLEMENT ARRAY WRAPPING (1 cell border) to avoid using % modulator for better performance
-# cells = [[0 for x in range(screen_x)] for y in range(screen_y)]  # for array wrapping
-cells = [[0 for x in range(screen_x)] for y in range(screen_y)]  # no array wrapping
-cells_new = cells
 # cells = np.array([[]]) # TODO try numpy array for possible optimization
+# TODO IMPLEMENT ARRAY padding (1 cell border) to avoid using % modulator for better performance
+cells = [0 for i in range(cells_number)]  # initialize 1-d array with zeroes
+cells_new = cells  # initialize swap array
 
-# Randomly fill in cells into world
-for x in range(screen_x):
-    for y in range(screen_y):
-        if random.randint(0, 18) == 1:
-            cells[x][y] = 1
+for i in range(cells_number):
+    if random.randint(0, 18) == 1:
+        cells[i] = 1
 
-# # for multithreaded:
-# def compute_next_cells(cells_range_x, cells_range_y):
-#     for x in range(cells_range_x):
-#         for y in range(cells_range_y):
-#             # TODO fix wrong counting (generates cool rug patterns)
-#             # count surrounding 8 cell neighbors
-#             cell_count = cells[x][ (y + 1) % cell_y]          + \
-#                 cells[ (x + 1) % cell_x][y]                   + \
-#                 cells[ (x + 1) % cell_x][(y + 1) % cell_y]    + \
-#                 cells[x][y - 1]                               + \
-#                 cells[x - 1][y]                               + \
-#                 cells[x - 1][y - 1]                           + \
-#                 cells[x - 1][(y + 1) % cell_y]                + \
-#                 cells[ (x + 1) % cell_x][y - 1]
-
-#             # Conway's Game of Life Rules
-#             if cells[x][y] == 1:  # check if main cell is alive
-#                 if cell_count < 2 or cell_count > 3:
-#                     cells_new[x][y] = 0
-#                     pg.draw.line(screen, c_red, (x,y), (x,y)) # draw cell died
-#                 if cell_count == 3:
-#                     cells_new[x][y] = 1
-#                     pg.draw.line(screen, c_white, (x,y), (x,y)) # draw cell survived
-#             elif cell_count == 3:
-#                 cells_new[x][y] = 1
-#                 pg.draw.line(screen, c_green, (x,y), (x,y)) # draw cell born
-
-# # MULTITHREADED loop # TODO implement multithreading
-# cpu_count = multiprocessing.cpu_count()
-# area_step_size = screen_x/cpu_count  # how many cells per cell area
-
-# for area_step_num in cpu_count:  # launch a process per cell area
-#     p = multiprocessing.Process(target=compute_next_cells(area_step_num*area_step_size, 0))
-#     p.start()
-#     p.join() # this line allows you to wait for processes
-
-# SINGLETHREADED loop
 while True:
-    # for pygame to be able to exit
+    # for pygame to be able to stop program
     for event in pg.event.get():
         if event.type == pg.QUIT:
             pg.quit()
             exit()
 
-    screen.fill(c_black)  # TODO-last add fading effect using alpha
+    screen.fill(c_black)  # TODO-last add past generations fading effect using alpha for pretty effect
     
     # iterate over every cell and compute the next generation
-    for x in range(screen_x):
-        for y in range(screen_y):
+    for y in range(screen_y_pad):  # TODO update for 1-d array, use y*width + x
+        for x in range(screen_x_pad):
+            # x, y = x + 1, y + 1  # add padding
+
             # TODO fix wrong counting (generates weird patterns)
-            # TODO use array wrappig (1 cell border) to avoid using % modulator for better performance
             # count surrounding 8 cell neighbors
-            cell_count = cells[x][ (y + 1) % cell_y]          + \
-                cells[ (x + 1) % cell_x][y]                   + \
-                cells[ (x + 1) % cell_x][(y + 1) % cell_y]    + \
-                cells[x][y - 1]                               + \
-                cells[x - 1][y]                               + \
-                cells[x - 1][y - 1]                           + \
-                cells[x - 1][(y + 1) % cell_y]                + \
-                cells[ (x + 1) % cell_x][y - 1]
+            # cell_count = cells[x][ (y + 1) % cell_y]          + \
+            #     cells[ (x + 1) % cell_x][y]                   + \
+            #     cells[ (x + 1) % cell_x][(y + 1) % cell_y]    + \
+            #     cells[x][y - 1]                               + \
+            #     cells[x - 1][y]                               + \
+            #     cells[x - 1][y - 1]                           + \
+            #     cells[x - 1][(y + 1) % cell_y]                + \
+            #     cells[ (x + 1) % cell_x][y - 1]
+            
+            y0 = (y)*screen_y  # up
+            y1 = (y+1)*screen_y  # main
+            y2 = (y+2)*screen_y  #3 down
+
+            x0 = x  # left
+            x1 = x + 1  # main
+            x2 = x + 2  # right
+
+            cell_count = \
+                cells[x0 + y0] + cells[x1 + y0] + cells[x2 + y0] + \
+                cells[x0 + y1]                  + cells[x2 + y1] + \
+                cells[x0 + y2] + cells[x1 + y2] + cells[x2 + y2]
+
+            # # Conway's Game of Life Rules
+            # if cells[x][y] == 1:  # check if main cell is alive
+            #     if cell_count < 2 or cell_count > 3:
+            #         cells_new[x][y] = 0
+            #         pg.draw.line(screen, c_red, (x,y), (x,y)) # draw cell died
+            #     if cell_count == 3:
+            #         cells_new[x][y] = 1
+            #         pg.draw.line(screen, c_white, (x,y), (x,y)) # draw cell survived
+            # elif cell_count == 3:
+            #     cells_new[x][y] = 1
+            #     pg.draw.line(screen, c_green, (x,y), (x,y)) # draw cell born
 
             # Conway's Game of Life Rules
-            if cells[x][y] == 1:  # check if main cell is alive
+            xy = x1 + y1
+
+            if cells[xy] == 1:  # check if main cell is alive
                 if cell_count < 2 or cell_count > 3:
-                    cells_new[x][y] = 0
+                    cells_new[xy] = 0
                     pg.draw.line(screen, c_red, (x,y), (x,y)) # draw cell died
                 if cell_count == 3:
-                    cells_new[x][y] = 1
+                    cells_new[xy] = 1
                     pg.draw.line(screen, c_white, (x,y), (x,y)) # draw cell survived
             elif cell_count == 3:
-                cells_new[x][y] = 1
+                cells_new[xy] = 1
                 pg.draw.line(screen, c_green, (x,y), (x,y)) # draw cell born
+
+            # x, y = x - 1, y - 1  # remove padding
             
     cells = cells_new  # swap cells array to be able to process next generation without conflict
-    
+    # TODO ### ADD COPYING BEHAVIOR FOR MATRIX WRAPPING
+    # top
+    # for x in range(screen_x_pad):
+    #     cells_new[x] = cells[cells_number_bottom_row + x]
+    # # bottom
+    # for x in range(screen_x_pad):
+    #     cells_new[cells_number_bottom_row + x] = cells[x]
+
+    # left
+
+    # right
+
+
     clock.tick()
     fps = round(clock.get_fps(), 3)
-    cells_per_second = round(fps * number_of_cells)
+    cells_per_second = round(fps * cells_number)
     pg.display.set_caption(str(fps) + " fps | " + str(cells_per_second) + " cells/s") # show fps
     pg.display.update()
